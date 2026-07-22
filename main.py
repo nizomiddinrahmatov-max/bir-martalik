@@ -75,3 +75,21 @@ if __name__ == "__main__":
     
     print("Bot ishga tushdi...")
     app.run_polling()
+
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot ishlayapti!")
+
+def run_health_check_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Serverni alohida oqimda (thread) yurgizish:
+threading.Thread(target=run_health_check_server, daemon=True).start()
