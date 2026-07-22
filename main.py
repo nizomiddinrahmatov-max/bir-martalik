@@ -106,34 +106,6 @@ def create_customer_order(user_id, first_name, username, product_name, price_val
         return False, order_res.text
 
 # --- 4. TELEGRAM BOT HANDLERLARI ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [
-        [KeyboardButton("📦 Mahsulotlar Katalogi")],
-        [KeyboardButton("📞 Biz bilan bog'lanish"), KeyboardButton("🚚 Yetkazib berish")]
-    ]
-    reply_markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
-    await update.message.reply_text(
-        "Assalomu alaykum! Bir martalik idishlar botiga xush kelibsiz.\n"
-        "Buyurtma berish uchun tugmalardan foydalaning:",
-        reply_markup=reply_markup
-    )
-
-async def show_catalog(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    products = get_moysklad_products()
-    if not products:
-        await update.message.reply_text("Hozircha mahsulotlar topilmadi yoki MoySklad ulanishida xatolik.")
-        return
-
-    msg = "<b>📦 Mahsulotlar ro'yxati:</b>\n\n"
-    for p in products[:15]:
-        name = p.get("name", "Nomsiz mahsulot")
-        price_rows = p.get("salePrices", [])
-        price = price_rows[0].get("value", 0) / 100 if price_rows else 0
-        msg += f"• <b>{name}</b> — {price:,.0f} so'm\n"
-
-    msg += "\n<i>Buyurtma berish uchun mahsulot nomini aniq yozib yuboring.</i>"
-    await update.message.reply_text(msg, parse_mode="HTML")
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -145,12 +117,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🚚 Yetkazib berish":
         await update.message.reply_text("🚚 Yetkazib berish shartlari:\n- Bepul yetkazib berish!\n- Minimal summa yo'q!")
     else:
-        # Foydalanuvchi yozgan matnni MoySklad tovarlari bilan solishtirish
+        # Matndan nuqta va narxlarni avtomatik tozalaymiz
+        clean_text = text.replace("•", "").split("—")[0].strip()
+
+        # MoySklad tovarlari bilan solishtirish
         products = get_moysklad_products()
         matched_product = None
         
         for p in products:
-            if text.lower() in p.get("name", "").lower():
+            p_name = p.get("name", "").strip()
+            if clean_text.lower() in p_name.lower() or p_name.lower() in clean_text.lower():
                 matched_product = p
                 break
 
